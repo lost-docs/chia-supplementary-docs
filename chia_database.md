@@ -9,43 +9,44 @@ slug:
 
 Linux / Mac:
 ```shell
-  .chia/mainnet/db
+  ~/.chia/mainnet/db
 ```
 
 Windows:
 ```shell
-   ???
+   C:\Users\USERNAME\.chia\mainnet\db
 ```
 ### Files within the database folder
 
-- blockchain_v2_mainnet.sqlite
+- **blockchain_v2_mainnet.sqlite**
 
-   This is the Chia blockchain database (SQLite).
+   ... is the Chia blockchain database - a SQLite database file.
 
 
-- blockchain_v2_mainnet.sqlite-shm
+- **blockchain_v2_mainnet.sqlite-shm**
    
-   SQLite shared memory file. A temporary file used by SQLite.
+   ... is a SQLite shared memory file. A temporary file used by SQLite.
 
 
-- blockchain_v2_mainnet.sqlite-wal
+- **blockchain_v2_mainnet.sqlite-wal**
 
-   SQLite write-ahead log. A temporary file used by SQLite.
-
-
-- height-to-hash
-
-   ???
+   ... is a SQLite write-ahead log. A temporary file used by SQLite.
 
 
-- peers.dat
+- **height-to-hash**
 
-   ???
+   ... is a binary file containing the block-header-hashes in consecutive order of creation, starting with the 
+   genesis block (block 0). 
 
 
-- sub-epoch-summaries
+- **peers.dat**
 
-   ???
+   ... is a binary file that contains addresses of valid (and banned?) Chia nodes.
+
+
+- **sub-epoch-summaries**
+
+   ... is a binary file that contains snapshots of each epoch.
 
 
 ## Tables and Indexes in the Chia Blockchain Database (blockchain_v2_mainnet.sqlite)
@@ -73,42 +74,42 @@ CREATE INDEX coin_puzzle_hash on coin_record(puzzle_hash);
 CREATE INDEX coin_parent_index on coin_record(coin_parent);
 ```
 
-- coin_name
+- **coin_name**
 
    The coin ID. The coin ID is the SHA256 hash of the coin's parent coin ID, puzzle hash and amount.
 
 
-- confirmed_index
+- **confirmed_index**
 
   The block height when the coin was created.
 
 
-- spent_index
+- **spent_index**
 
    The block height when the coin was spent.
 
 
-- coinbase
+- **coinbase**
 
    Whether the coin is a block reward or not. The value can be 0 or 1 (false or true).
 
 
-- puzzle_hash
+- **puzzle_hash**
 
    The puzzle hash of the coin. The puzzle hash is a SHA256 hash of the coin's puzzle.
 
 
-- coin_parent
+- **coin_parent**
 
    The coin ID of the parent coin.
 
 
-- amount
+- **amount**
 
    The amount in mojos. A mojo is one trillionth of a XCH (0.000000000001 XCH or 1 x 10^-12 XCH).
 
 
-- timestamp
+- **timestamp**
 
    A Unix timestamp (the number of non-leap seconds since January 1st 1970, 00:00:00 UTC. AKA the Unix epoch).
 
@@ -121,12 +122,12 @@ The current_peak table has one row containing the header hash of the most recent
 CREATE TABLE current_peak(key int PRIMARY KEY, hash blob);
 ```
 
-- key
+- **key**
 
-   The value of the key column is always 0 (zero). Its purpose is to make the update statement for this row/table simple.
+   The value of the key column is always 0 (zero). Its purpose is to simplify the update (statement) for the hash column.
 
 
-- hash
+- **hash**
 
    The hash column contains the header hash of the most recent block.
 
@@ -139,7 +140,7 @@ The database_version table has a single row which contains the current version o
 CREATE TABLE database_version(version int);
 ```
 
-- version
+- **version**
 
    The version number of the Chia blockchain database.
 
@@ -155,42 +156,42 @@ CREATE INDEX is_fully_compactified ON full_blocks(is_fully_compactified, in_main
 CREATE INDEX main_chain ON full_blocks(height, in_main_chain) WHERE in_main_chain=1;
 ```
 
-- header_hash
+- **header_hash**
 
    The header hash is the block identifier. 
 
 
-- prev_hash
+- **prev_hash**
 
    The header hash of the block that came before this block. 
 
 
-- height
+- **height**
 
    The height of this block.
 
 
-- sub_epoch_summary
+- **sub_epoch_summary**
 
    ???
 
 
-- is_fully_compactified
+- **is_fully_compactified**
 
    ???
 
 
-- in_main_chain
+- **in_main_chain**
 
    ???
 
 
-- block
+- **block**
 
    ???
 
 
-- block_record
+- **block_record**
 
    ???
 
@@ -204,12 +205,12 @@ CREATE TABLE hints(coin_id blob, hint blob, UNIQUE (coin_id, hint));
 CREATE INDEX hint_index on hints(hint);
 ```
 
-- coin_id
+- **coin_id**
 
    ???
 
 
-- hint
+- **hint**
 
    ???
 
@@ -222,12 +223,12 @@ The sub_epoch_segments_v3 table contains ... ???
 CREATE TABLE sub_epoch_segments_v3(ses_block_hash blob PRIMARY KEY,challenge_segments blob);
 ```
 
-- ses_block_hash
+- **ses_block_hash**
 
    ???
 
 
-- challenge_segments
+- **challenge_segments**
 
    ???
    
@@ -236,17 +237,31 @@ CREATE TABLE sub_epoch_segments_v3(ses_block_hash blob PRIMARY KEY,challenge_seg
 
 ### height-to-hash
 
-   The height-to-hash binary file maps the block heights to their corresponding block header hashes. A block header 
-   hash is the identifier for a given block. The file is used to quickly check if the blockchain database is up to date 
-   on the correct and valid chain.
-   
+   The height-to-hash binary file contains all block header hashes in consecutive order of block creation. A block's 
+   header hash is the SHA256 hash of its block header (for more info see here: https://docs.chia.net/block-format/). 
+   The file is used to quickly check if the blockchain database is up to date and on the correct and valid chain when 
+   the node starts. 
 
-   To decode this file ... ???
+   The SHA256 hash is a hexadecimal number with 64 digits. The binary representation of a SHA256 hash has a length of 
+   32 bytes. So bytes 1 to 32 of the file represent the genesis block (block 0), bytes 33 to 64 block 1, and so on.
+
+   In Linux you can use the hexdump utility to view the contents of this file. The following hexdump command returns 
+   the header hash of block 555555:
+   ```shell
+   hexdump -e '32/1 "%.2x" "\n"' -n 32 -s $((555555*32)) height-to-hash
+   ```
+   ```shell
+   402d94ade6570aefb5ecc2e35675e394f7aa76688a569a043d18ea8871fa7b73
+   ```
+   If you want to check the result in a Chia blockchain explorer remember to prefix the hex number with '0x'.
+
+   The file isn't updated after every new block creation.
+
 
 ### peers.dat
 
-The peers.dat binary file contains a lists of valid and banned peers. This file enables the node to quickly connect to 
-other nodes in the Chia network.
+The peers.dat binary file contains a lists of valid (and banned?) peers. This file enables the node to quickly connect 
+to other nodes in the Chia network.
 
 To decode this file ... ???
 
